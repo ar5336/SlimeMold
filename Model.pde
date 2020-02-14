@@ -3,9 +3,9 @@ class Mold{
   float x;
   float y;
   
-  int numSensors = 3;
-  float sensorSpan = PI/3;
-  float sensorDistance = SENSE_DIST;
+  int numSensors = NUM_SENSORS;
+  float sensorSpan = SENSOR_SPAN;
+  //float sensorDistance = SENSE_DIST;
   
   Mold(float heading, float x, float y){
     this.heading = heading;
@@ -16,8 +16,8 @@ class Mold{
   float sense(int num){ //senses at sensor num
     
     float sensorAngle = heading-sensorSpan+(((float)num/(float)numSensors)*(sensorSpan*2));
-    float sensorX = x+cos(sensorAngle)*sensorDistance;
-    float sensorY = y-sin(sensorAngle)*sensorDistance;
+    float sensorX = x+cos(sensorAngle)*SENSE_DIST;
+  float sensorY = y-sin(sensorAngle)*SENSE_DIST;
     
     //if((int)sensorX >= width || sensorX < 0){
     //  //flip heading horizontally
@@ -58,26 +58,36 @@ class Mold{
       return;
     }
     
+    
+    float minDist = Integer.MAX_VALUE;
+    
     float[] sensorVals = new float[numSensors];
-    float currentMax = -1;
-    //find the most dense sensor(s)
     for(int i = 0; i < numSensors; i++){
       float datum = sense(i);
       sensorVals[i] = datum;
-      if(datum > currentMax){
-        currentMax = datum;
+      float dist = abs(datum-TARGET_TRAIL);
+      if(dist < minDist){
+        minDist = dist;
       }
     }
+    //  currentMax = 1000;
+    //  for(int i = 0; i < numSensors; i++){
+    //    float datum = sense(i);
+    //    sensorVals[i] = datum;
+    //    if(datum < currentMax){
+    //      currentMax = datum;
+    //    }
+    //  }
+    //find the most dense sensor(s)
+
     boolean[] isMax = new boolean[numSensors];
     int numMaxes = 0;
     for(int i = 0; i < numSensors; i++){
-      if(sensorVals[i] == currentMax){
+      if(abs(sensorVals[i]-TARGET_TRAIL) == minDist){
         isMax[i] = true;
         numMaxes++;
       }
     }
-    
-    //moveToSensor(0);
     
     //choose randomly from densest sensors and move there
     int chosenSensor = (int)random(0,numMaxes);
@@ -95,17 +105,22 @@ class Mold{
   void moveToSensor(int num){
     //println(num);
     float sensorAngle = -sensorSpan+(((float)num/(float)numSensors)*(sensorSpan*2));
-    float dX = cos(heading+sensorAngle)*sensorDistance;
-    float dY = -sin(heading+sensorAngle)*sensorDistance;
+    float dX = cos(heading+sensorAngle)*TRAVEL_DIST;
+    float dY = -sin(heading+sensorAngle)*TRAVEL_DIST;
     float sensorX = x+dX;
     float sensorY = y+dY;
     
-    //deposit line of trail
-    for(int i = 0; i < sensorDistance; i++){
-      int lineX = (int)((float)dX*((float)i)/sensorDistance);
-      int lineY = (int)((float)dY*((float)i)/sensorDistance);
-      
-      trail[max(min((int)x+lineX,width-1),0)][max(min((int)y+lineY,height-1),0)] += 1.5;
+    if(!LINE_DOT){
+      trail[max(min((int)this.x,width-1),0)][max(min((int)this.y,height-1),0)] += TRAIL_DENSITY;
+      trail[max(min((int)sensorX,width-1),0)][max(min((int)sensorY,height-1),0)] += TRAIL_DENSITY;
+    } else {
+      //deposit line of trail
+      for(int i = 0; i < TRAVEL_DIST; i++){
+        int lineX = (int)((float)dX*((float)i)/TRAVEL_DIST);
+        int lineY = (int)((float)dY*((float)i)/TRAVEL_DIST);
+        
+        trail[max(min((int)x+lineX,width-1),0)][max(min((int)y+lineY,height-1),0)] += TRAIL_DENSITY/SENSE_DIST;
+      }
     }
     
     this.x = sensorX;
@@ -117,18 +132,18 @@ class Mold{
 float[][] getUpdatedTrail(){
   float[][] newTrail = new float[width][height];
   //disperse "every" square
-  int BLUR_RAD = 1;
   for(int r = BLUR_RAD; r < width-BLUR_RAD; r++){
     for(int c = BLUR_RAD; c < height-BLUR_RAD; c++){
       disperseSquare(newTrail,r,c,BLUR_RAD);
-    }
-  }
-  //decay every square by a bit
-  for(int r = 0; r < width; r++){
-    for(int c = 0; c < height; c++){
       decaySquare(newTrail,r,c);
     }
   }
+  //decay every square by a bit
+  //for(int r = 0; r < width; r++){
+  //  for(int c = 0; c < height; c++){
+  //    decaySquare(newTrail,r,c);
+  //  }
+  //}
   return newTrail;
 }
 
@@ -145,5 +160,7 @@ void disperseSquare(float[][] newTrail, int ir, int ic, int BLUR_RAD){
 }
 
 void decaySquare(float[][] newTrail, int r, int c){
-  newTrail[r][c] *= .8;
+  newTrail[r][c] *= TRAIL_DECAY;
+  newTrail[r][c] -= TRAIL_SWEEP;  
+  newTrail[r][c] = max(newTrail[r][c],0);
 }

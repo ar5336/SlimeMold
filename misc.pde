@@ -1,8 +1,8 @@
 void placeStart(){
-  
-  //for(int r = 225; r < 275; r++){
-  //  for(int c = 225; c < 275; c++){
-  //    trail[r][c] = 1;
+  //float boxSize = 100;
+  //for(float r = width/2-boxSize; r < width/2+boxSize; r++){
+  //  for(float c = height/2-boxSize; c < height/2+boxSize; c++){
+  //    trail[(int)r][(int)c] += 10;
   //  }
   //}
 }
